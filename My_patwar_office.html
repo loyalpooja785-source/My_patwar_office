@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <title>पटवार ऑफिस - एडवांस्ड डिजिटल रिकॉर्ड्स टूल</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 20px; background-color: #f0f4f8; color: #333; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        h2 { color: #1a365d; text-align: center; margin-bottom: 20px; border-bottom: 3px solid #2b6cb0; padding-bottom: 12px; }
+        
+        /* Upload & Folder Grid */
+        .upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+        .file-upload-box { border: 2px dashed #2b6cb0; padding: 20px; text-align: center; background: #f7fafc; border-radius: 8px; cursor: pointer; position: relative;}
+        .file-upload-box:hover { background: #edf2f7; }
+        .file-upload-box input[type="file"] { display: none; }
+        .upload-title { font-size: 14px; font-weight: bold; color: #2c5282; margin-bottom: 5px; }
+        .file-name-info { margin-top: 5px; color: #4a5568; font-size: 12px; font-style: italic; }
+        
+        /* Local Folder Section */
+        .folder-section { background: #fffaf0; border: 2px solid #ed8936; padding: 15px; border-radius: 8px; margin-bottom: 25px; }
+        .folder-header { font-weight: bold; color: #c05621; margin-bottom: 10px; font-size: 15px; border-bottom: 1px solid #fbd38d; padding-bottom: 5px;}
+        .saved-file-item { display: inline-block; background: white; border: 1px solid #ecc94b; padding: 8px 12px; border-radius: 5px; margin: 5px; font-size: 13px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .save-btn { margin-top: 10px; background: #ed8936; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; display: none;}
+        .load-btn { background: #48bb78; color: white; border: none; padding: 3px 8px; border-radius: 3px; cursor: pointer; margin-left: 8px; font-size: 11px;}
+        .delete-btn { background: #e53e3e; color: white; border: none; padding: 3px 6px; border-radius: 3px; cursor: pointer; margin-left: 5px; font-size: 11px;}
+
+        /* Plot Selection Tool Box */
+        .plot-calculator-box { background-color: #fff5f5; border: 2px solid #feb2b2; padding: 18px; border-radius: 8px; margin-bottom: 25px; box-shadow: 0 2px 8px rgba(229, 62, 62, 0.05); }
+        .plot-calculator-box h4 { margin: 0 0 12px 0; color: #c53030; font-size: 16px; display: flex; align-items: center; gap: 8px; }
+        .calc-grid { display: flex; flex-wrap: wrap; gap: 20px; align-items: center; }
+        .calc-field { display: flex; flex-direction: column; }
+        .calc-field label { font-size: 12px; font-weight: bold; color: #9b2c2c; margin-bottom: 4px; }
+        .calc-input { padding: 8px 12px; border: 1px solid #feb2b2; border-radius: 4px; font-size: 15px; font-weight: bold; color: #2d3748; width: 140px; }
+        .calc-input:focus { outline: none; border-color: #e53e3e; box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.2); }
+        .calc-badge { background: #e53e3e; color: white; padding: 8px 16px; border-radius: 6px; font-weight: bold; font-size: 14px; }
+        .calc-info-text { font-size: 13px; color: #718096; font-style: italic; margin-top: 8px; border-top: 1px dashed #feb2b2; padding-top: 6px; width: 100%; }
+
+        /* Tabs and Search */
+        .tabs { display: flex; flex-wrap: wrap; margin-bottom: 15px; border-bottom: 2px solid #cbd5e0; }
+        .tab-btn { padding: 10px 15px; cursor: pointer; font-weight: bold; background: #e2e8f0; border: none; border-top-left-radius: 4px; border-top-right-radius: 4px; margin-right: 5px; font-size: 13px; transition: 0.2s; }
+        .tab-btn.active { background: #2b6cb0; color: white; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        .search-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; background: #edf2f7; padding: 15px; border-radius: 6px; margin-bottom: 20px; }
+        .search-box { display: flex; flex-direction: column; }
+        .search-box label { font-weight: bold; margin-bottom: 5px; color: #2d3748; font-size: 13px;}
+        .search-box input, .search-box select { padding: 8px; border: 1px solid #cbd5e0; border-radius: 4px; font-size: 14px; }
+        
+        .btn { background-color: #2b6cb0; color: white; padding: 10px 20px; border: none; border-radius: 5px; font-size: 14px; cursor: pointer; font-weight: bold; }
+        .btn-success { background-color: #2f855a; }
+        .actions-bar { text-align: center; margin: 15px 0; }
+        
+        .village-summary-box { background-color: #ebf8ff; border: 2px solid #3182ce; padding: 15px; border-radius: 6px; margin-top: 25px; text-align: center; }
+        .village-summary-box h3 { margin: 0 0 8px 0; color: #2b6cb0; font-size: 16px; }
+        .village-summary-box .area-val { font-size: 24px; font-weight: bold; color: #2c5282; }
+
+        /* ====== LAYOUT & CODES FOR COPIES ====== */
+        .khata-section { border: 1px solid #000; padding: 20px; margin-bottom: 30px; background-color: #fff; border-radius: 0; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .pdf-header { text-align: center; position: relative; margin-bottom: 15px; font-family: 'Arial', sans-serif; }
+        .pdf-header h2 { margin: 0; font-size: 22px; color: #000; border: none; padding: 0; text-decoration: underline; font-weight: bold; }
+        .pdf-p-form { position: absolute; top: 0; right: 0; text-align: right; font-size: 12px; font-weight: bold; line-height: 1.2; }
+        
+        .pdf-meta-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 14px; }
+        .pdf-meta-table td { border: 1px solid #000; padding: 6px 10px; vertical-align: top; width: 50%; }
+        
+        .pdf-khatedar-list { margin-bottom: 15px; font-size: 14px; line-height: 1.6; padding: 10px; border: 1px dashed #718096; background: #fafafa; }
+        .pdf-khatedar-list .share-area { color: #2b6cb0; font-weight: bold; }
+
+        .pdf-khasra-table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: center; margin-bottom: 15px;}
+        .pdf-khasra-table th, .pdf-khasra-table td { border: 1px solid #000; padding: 8px 5px; color: #000; }
+        .pdf-khasra-table th { background-color: #f0f0f0; font-weight: bold; }
+
+        .girdawari-title-sub { font-size: 15px; font-weight: bold; margin-top: 5px; }
+        .girdawari-top-meta { width: 100%; border: 1px solid #000; padding: 8px; font-size: 13px; font-weight: bold; line-height: 1.6; margin-bottom: 10px; background-color: #fff; text-align: left; }
+        
+        /* Crop Cutting Tables */
+        .cc-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
+        .cc-table th, .cc-table td { border: 1px solid #cbd5e0; padding: 10px; text-align: center; border: 1px solid #000; }
+        .cc-table th { background-color: #2b6cb0; color: white; font-weight: bold; }
+        .cc-table tr:nth-child(even) { background-color: #f7fafc; }
+        .badge-bhatta { background-color: #feebc8; color: #c05621; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 11px; }
+        
+        /* Highlight Selected Plot Row */
+        .selected-plot-row { background-color: #fff5f5 !important; border: 3px solid #e53e3e !important; box-shadow: inset 0 0 4px #feb2b2; }
+        .selected-plot-row td { font-weight: bold; color: #b7791f; border-top: 2px solid #e53e3e !important; border-bottom: 2px solid #e53e3e !important; }
+        .selected-plot-badge { background-color: #e53e3e; color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; animation: pulse 2s infinite; }
+        
+        .flex-cc-tables { display: grid; grid-template-columns: 1fr; gap: 30px; margin-top: 20px; }
+        
+        .lc-details { background: #fffff0; border: 1px solid #d69e2e; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-size: 13px; }
+        .lc-details summary { font-weight: bold; color: #975a16; font-size: 14px; }
+        .lc-details ul { margin: 10px 0 0 0; padding-left: 20px; line-height: 1.6; }
+
+        .print-footer { margin-top: 20px; border-top: 1px solid #000; padding-top: 15px; font-size: 12px; }
+        .print-footer-legal { text-align: left; margin-bottom: 20px; font-weight: bold; }
+        .print-footer-flex { display: flex; justify-content: space-between; align-items: flex-end; }
+        .creator { font-weight: bold; color: #000; }
+        .sys-note { font-size: 11px; color: #4a5568; font-style: italic; margin-top: 5px; text-align: center; }
+        
+        .section-heading { font-size: 16px; font-weight: bold; color: #1a365d; margin-top: 25px; padding-bottom: 5px; border-bottom: 2px solid #cbd5e0; text-align: left; }
+
+        @media print {
+            body { background: white; margin: 0; padding: 0; }
+            .no-print { display: none !important; }
+            .print-area { display: block !important; }
+            @page { size: A4; margin: 12mm; }
+            .khata-section { page-break-after: always; box-shadow: none; border: 1px solid #000 !important; padding: 15px; }
+            .selected-plot-row { background-color: #fff5f5 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; border: 2px solid #000 !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container no-print">
+        <h2>पटवार ऑफिस - एडवांस्ड डिजिटल रिकॉर्ड्स टूल</h2>
+        
+        <div class="folder-section">
+            <div class="folder-header">📂 टूल का लोकल फोल्डर (सेव की गई एक्सेल फ़ाइलें)</div>
+            <div id="savedFilesContainer" style="font-size: 13px; color: #718096;">लोड हो रहा है...</div>
+        </div>
+
+        <div class="upload-grid">
+            <div class="file-upload-box">
+                <div onclick="document.getElementById('excelFile1').click()">
+                    <div class="upload-title">📁 1st EXCEL: खातेदार की सूचना फ़ाइल</div>
+                    <span style="font-size:12px; color:#4a5568;">(खाता नं॰, खातेदार का नाम व हिस्सा फ़ाइल)</span>
+                    <input type="file" id="excelFile1" accept=".xlsx, .xls">
+                    <div id="file1Name" class="file-name-info">कोई फ़ाइल चयनित नहीं है</div>
+                </div>
+                <button id="saveBtn1" class="save-btn" onclick="saveCurrentData(1)">💾 इसे फोल्डर में सेव करें</button>
+            </div>
+            
+            <div class="file-upload-box">
+                <div onclick="document.getElementById('excelFile2').click()">
+                    <div class="upload-title">📁 2nd EXCEL: गोसवारा / फसल विवरण फ़ाइल</div>
+                    <span style="font-size:12px; color:#4a5568;">(गांव, पटवार, खसरा, रकबा व भूमि वर्गीकरण)</span>
+                    <input type="file" id="excelFile2" accept=".xlsx, .xls">
+                    <div id="file2Name" class="file-name-info">कोई फ़ाइल चयनित नहीं है</div>
+                </div>
+                <button id="saveBtn2" class="save-btn" onclick="saveCurrentData(2)">💾 इसे फोल्डर में सेव करें</button>
+            </div>
+        </div>
+
+        <div id="dashboardArea" style="display: none;">
+            
+            <div class="plot-calculator-box">
+                <h4>🎯 क्रॉप कटिंग प्लॉट चयन कैलकुलेटर (शेषफल विधि)</h4>
+                <div class="calc-grid">
+                    <div class="calc-field">
+                        <label>मैनुअल संख्या दर्ज करें:</label>
+                        <input type="number" id="manualRandNumber" class="calc-input" placeholder="जैसे: 5476" oninput="calculateSelectedPlot()">
+                    </div>
+                    <div class="calc-field">
+                        <label>ग्राम के कुल खसरे (N):</label>
+                        <input type="text" id="calcTotalKhasras" class="calc-input" style="background:#e2e8f0; border-color:#cbd5e0;" readonly value="0">
+                    </div>
+                    <div id="calcOutputBadge" class="calc-badge" style="background:#4a5568;">
+                        कृपया संख्या दर्ज करें...
+                    </div>
+                </div>
+                <div id="calcFormulaText" class="calc-info-text">फॉर्मूला: [दर्ज संख्या] ÷ [कुल खसरे] = जो भी शेषफल बचेगा, उस सीक्वेंस नंबर का खसरा क्रॉप कटिंग प्लॉट माना जाएगा।</div>
+            </div>
+
+            <div class="tabs">
+                <button class="tab-btn active" id="tab-normalView" onclick="switchTab('normalView')">🔍 सामान्य खाता विवरण (PDF Style)</button>
+                <button class="tab-btn" id="tab-consolidatedView" onclick="switchTab('consolidatedView')">📊 एक नाम के सभी खाते (Consolidated)</button>
+                <button class="tab-btn" id="tab-girdawariView" onclick="switchTab('girdawariView')">📄 प्रपत्र प-13 (गिरदावरी प्रिंटर)</button>
+                <button class="tab-btn" id="tab-cropCuttingView" onclick="switchTab('cropCuttingView')">✂️ क्रॉप कटिंग (विशेष इंडेक्स)</button>
+            </div>
+
+            <div id="normalView" class="tab-content active">
+                <div class="search-container">
+                    <div class="search-box">
+                        <label>खाता संख्या चुनें:</label>
+                        <select id="searchKhata" onchange="filterMergedData()">
+                            <option value="">-- सभी खाते --</option>
+                        </select>
+                    </div>
+                    <div class="search-box">
+                        <label>खातेदार का नाम:</label>
+                        <input type="text" id="searchName" placeholder="नाम से खोजें..." oninput="filterMergedData()">
+                    </div>
+                    <div class="search-box">
+                        <label>खसरा संख्या:</label>
+                        <input type="text" id="searchKhasra" placeholder="खसरा नंबर डालें..." oninput="filterMergedData()">
+                    </div>
+                </div>
+                <div class="actions-bar">
+                    <button class="btn btn-success" onclick="window.print()">🖨️ वर्तमान सूची का PDF प्रिंट करें</button>
+                    <button class="btn" style="background-color: #4a5568;" onclick="resetNormalFilters()">🔄 रीसेट</button>
+                </div>
+            </div>
+
+            <div id="consolidatedView" class="tab-content">
+                <div class="search-container">
+                    <div class="search-box">
+                        <label>खातेदार का नाम (सर्च):</label>
+                        <input type="text" id="manualConsolidatedSearch" placeholder="मैनुअल नाम लिखकर खोजें..." oninput="filterConsolidatedDropdown()">
+                    </div>
+                    <div class="search-box">
+                        <label>खातेदार प्रोफाइल चुनें:</label>
+                        <select id="consolidatedSelect" onchange="renderConsolidatedReport()">
+                            <option value="">-- नाम सेलेक्ट करें --</option>
+                        </select>
+                    </div>
+                    <div class="search-box" style="justify-content: flex-end;">
+                        <button class="btn btn-success" onclick="window.print()">🖨️ समेकित रिकॉर्ड प्रिंट करें</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="girdawariView" class="tab-content">
+                <div class="search-container">
+                    <div class="search-box">
+                        <label>गिरदावरी हेतु खाता चुनें:</label>
+                        <select id="girdawariKhataSelect" onchange="renderGirdawariReport()">
+                            <option value="">-- खाता चुनें --</option>
+                        </select>
+                    </div>
+                    <div class="search-box" style="justify-content: flex-end;">
+                        <button class="btn btn-success" onclick="window.print()">🖨️ प्रपत्र प-13 गिरदावरी प्रिंट करें</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="cropCuttingView" class="tab-content">
+                <div style="background-color: #edf2f7; padding: 15px; border-radius: 6px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-weight: bold; color: #2d3748;">📋 क्रॉप कटिंग मास्टर लिस्ट: खसरा डिनॉमिनेटर क्रमानुसार सेट है एवं समस्त फसलें कोमा (,) के साथ एक जगह क्लब की गई हैं।</span>
+                    <button class="btn btn-success" onclick="window.print()">🖨️ क्रॉप कटिंग शीट प्रिंट करें</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="status" class="status-msg"></div>
+
+        <div id="villageSummaryArea" class="village-summary-box" style="display:none;">
+            <h3>🗃️ ग्राम भूमि सांख्यिकी विवरण (Village Total Land Summary)</h3>
+            <div>इस ग्राम के सभी खातों का कुल शुद्ध क्षेत्रफल: <span id="lblVillageTotalArea" class="area-val">0.0000</span> हेक्टेयर</div>
+        </div>
+    </div>
+
+    <div id="printArea" class="print-area"></div>
+
+    <script>
+        // --- LOCAL INDEXED STORAGE SERVICE ---
+        let db;
+        const dbName = "PatwarOfficeFolderDB";
+        const request = indexedDB.open(dbName, 1);
+
+        request.onupgradeneeded = function(e) {
+            db = e.target.result;
+            if (!db.objectStoreNames.contains('savedExcels')) {
+                db.createObjectStore('savedExcels', { keyPath: 'id', autoIncrement: true });
+            }
+        };
+        request.onsuccess = function(e) { db = e.target.result; loadFolderFiles(); };
+
+        function saveCurrentData(typeNum) {
+            let dataToSave = typeNum === 1 ? sheet1Rows : sheet2Rows;
+            let fileName = typeNum === 1 ? document.getElementById('file1Name').innerText : document.getElementById('file2Name').innerText;
+            if(dataToSave.length === 0) return alert("पहले फाइल अपलोड करें!");
+            let label = prompt("इस फाइल को सुरक्षित नाम दें:", fileName.replace('✅ ', ''));
+            if(!label) return;
+            const transaction = db.transaction(['savedExcels'], 'readwrite');
+            const store = transaction.objectStore('savedExcels');
+            store.add({ type: typeNum, label: label, data: dataToSave, date: new Date().toLocaleDateString() });
+            transaction.oncomplete = function() { alert("सफलतापूर्वक सेव किया गया!"); loadFolderFiles(); };
+        }
+
+        function loadFolderFiles() {
+            const transaction = db.transaction(['savedExcels'], 'readonly');
+            const store = transaction.objectStore('savedExcels');
+            const req = store.getAll();
+            req.onsuccess = function() {
+                const files = req.result;
+                const container = document.getElementById('savedFilesContainer');
+                if(files.length === 0) { container.innerHTML = "<i>लोकल डिजिटल फोल्डर खाली है। एक्सेल फाइल अपलोड करें।</i>"; return; }
+                let html = "";
+                files.forEach(f => {
+                    let typeBadge = f.type === 1 ? "1st Excel" : "2nd Excel";
+                    html += `<div class="saved-file-item">
+                        <strong>${f.label}</strong> <span style="color:#718096; font-size:11px;">(${typeBadge})</span><br>
+                        <button class="load-btn" onclick="useFolderFile(${f.id}, ${f.type})">⬇️ लोड</button>
+                        <button class="delete-btn" onclick="deleteFolderFile(${f.id})">❌</button>
+                    </div>`;
+                });
+                container.innerHTML = html;
+            };
+        }
+
+        function useFolderFile(id, typeNum) {
+            const transaction = db.transaction(['savedExcels'], 'readonly');
+            const store = transaction.objectStore('savedExcels');
+            const req = store.get(id);
+            req.onsuccess = function() {
+                const fileRecord = req.result;
+                if(typeNum === 1) {
+                    sheet1Rows = fileRecord.data; document.getElementById('file1Name').innerText = "📂 लोड: " + fileRecord.label;
+                } else {
+                    sheet2Rows = fileRecord.data; document.getElementById('file2Name').innerText = "📂 लोड: " + fileRecord.label;
+                    extractGeoMetaFromData();
+                }
+                checkAndMergeData();
+            };
+        }
+
+        function deleteFolderFile(id) {
+            if(confirm("फाइल हटाना चाहते हैं?")) {
+                const tx = db.transaction(['savedExcels'], 'readwrite');
+                tx.objectStore('savedExcels').delete(id);
+                tx.oncomplete = () => loadFolderFiles();
+            }
+        }
+
+        // --- 2 EXCEL ENGINES AND PARSER ---
+        let sheet1Rows = []; let sheet2Rows = []; let mergedDatabase = [];
+        let masterCropCuttingList = []; // Unique khasras list with all combined crops
+        let currentCalculatedPlotSequence = -1; // To hold remainder sequence
+
+        let uniqueFarmersMap = {}; let geoMeta = { village: '-', patwar: '-', tehsil: '-', district: '-', region: '-' };
+        let finalUniqueVillageAreaTotal = 0; let activeTab = "normalView";
+
+        document.getElementById('excelFile1').addEventListener('change', function(e) {
+            const file = e.target.files[0]; if (!file) return;
+            document.getElementById('file1Name').innerText = "✅ " + file.name;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                let raw = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+                sheet1Rows = raw.map(r => ({
+                    khataNo: String(r['खाता नं॰'] || r['खाता संख्या'] || r['KHATA_NO'] || '').trim(),
+                    name: String(r['खातेदार का नाम'] || r['OWNER_NAME'] || '').trim(),
+                    father: String(r['पिता का नाम'] || r['father_name'] || '').trim(),
+                    husband: String(r['पति का नाम'] || r['husband_name'] || '').trim(),
+                    caste: r['जाति'] || r['caste'] || '-',
+                    resident: r['निवासी'] || r['resident'] || 'सा. देह',
+                    share: r['हिस्सा'] || r['share'] || '1/1'
+                })).filter(r => r.khataNo && r.name);
+                document.getElementById('saveBtn1').style.display = 'inline-block';
+                checkAndMergeData();
+            }; reader.readAsArrayBuffer(file);
+        });
+
+        document.getElementById('excelFile2').addEventListener('change', function(e) {
+            const file = e.target.files[0]; if (!file) return;
+            document.getElementById('file2Name').innerText = "✅ " + file.name;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                let raw = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+                sheet2Rows = raw.map(r => {
+                    return {
+                        village: r['VILLAGE_NAME'] || r['ग्राम'] || '-', 
+                        patwar: r['PATWAR_NAME'] || r['पटवार हल्का'] || '-',
+                        tehsil: r['TEHSIL_NAME'] || r['तहसील'] || '-', 
+                        district: r['DISTRICT_NAME'] || r['जिला'] || '-',
+                        region: r['भू.अभि.नि. क्षेत्र'] || r['ILR_NAME'] || '-',
+                        khataNo: String(r['खाता नं॰'] || r['खाता संख्या'] || r['KHATA_NO'] || '').trim(),
+                        khasraNo: String(r['खसरा'] || r['खसरा संख्या'] || r['KHASRA_NO'] || '-').trim(),
+                        area: parseFloat(r['खाता क्षेत्रफल'] || r['AREA'] || r['SOIL_AREA'] || r['KHASRA_AREA'] || 0),
+                        landClass: String(r['भूमि वर्गीकरण'] || r['LAND_CLASS'] || r['SOIL_CLASS'] || '-').trim(),
+                        crop: String(r['फसल'] || r['CROP_NAME'] || '').trim(),
+                        irrigated: parseFloat(r['सिंचित क्षेत्रफल'] || 0),
+                        unirrigated: parseFloat(r['असिंचित क्षेत्रफल'] || 0)
+                    };
+                }).filter(r => r.khataNo);
+                extractGeoMetaFromData(); document.getElementById('saveBtn2').style.display = 'inline-block'; checkAndMergeData();
+            }; reader.readAsArrayBuffer(file);
+        });
+
+        function extractGeoMetaFromData() {
+            if(sheet2Rows.length > 0) {
+                let r = sheet2Rows[0];
+                if(r.village !== '-') geoMeta.village = r.village; if(r.patwar !== '-') geoMeta.patwar = r.patwar;
+                if(r.tehsil !== '-') geoMeta.tehsil = r.tehsil; if(r.district !== '-') geoMeta.district = r.district;
+                if(r.region !== '-') geoMeta.region = r.region;
+            }
+        }
+
+        // --- SPECIAL ALGORITHM FOR DENOMINATOR DRIVEN BHATTA SORTING ---
+        function parseSpecialKhasraKey(khasraStr) {
+            let part = khasraStr.split('/');
+            if(part.length > 1) {
+                let numerator = parseInt(part[0], 10) || 0;
+                let denominator = parseInt(part[1], 10) || 0;
+                return { primary: denominator, secondary: numerator, isBhatta: true };
+            } else {
+                let num = parseInt(khasraStr, 10) || 0;
+                return { primary: num, secondary: 0, isBhatta: false };
+            }
+        }
+
+        function sortKhasraArraySpecial(array, keyName) {
+            return array.sort((a, b) => {
+                let kA = parseSpecialKhasraKey(String(a[keyName]));
+                let kB = parseSpecialKhasraKey(String(b[keyName]));
+                
+                if (kA.primary !== kB.primary) {
+                    return kA.primary - kB.primary;
+                }
+                return kA.secondary - kB.secondary;
+            });
+        }
+
+        function checkAndMergeData() {
+            if (sheet1Rows.length === 0 || sheet2Rows.length === 0) return;
+            mergedDatabase = [];
+            
+            // Generate standard database mapping
+            sheet1Rows.forEach(f => {
+                let matches = sheet2Rows.filter(l => l.khataNo === f.khataNo);
+                if(matches.length > 0) matches.forEach(m => {
+                    mergedDatabase.push({ ...f, khasraNo: m.khasraNo, khasraArea: m.area, landClass: m.landClass, crop: m.crop, irrigated: m.irrigated, unirrigated: m.unirrigated });
+                });
+            });
+
+            // Calculate total unique land area
+            let uMap = {}; sheet2Rows.forEach(r => uMap[r.khataNo + "_" + r.khasraNo] = r.area);
+            finalUniqueVillageAreaTotal = Object.values(uMap).reduce((a,b) => a + b, 0);
+            document.getElementById('lblVillageTotalArea').innerText = finalUniqueVillageAreaTotal.toFixed(4);
+            document.getElementById('villageSummaryArea').style.display = "block";
+
+            // Generate Master unique Khasra list for Crop Cutting with combined multi-crops separated by comma (,)
+            let uniqueKhasraAggregate = {};
+            sheet2Rows.forEach(r => {
+                let kKey = r.khasraNo;
+                if(!uniqueKhasraAggregate[kKey]) {
+                    uniqueKhasraAggregate[kKey] = {
+                        khasraNo: r.khasraNo,
+                        khataNo: r.khataNo,
+                        area: r.area,
+                        cropsSet: new Set()
+                    };
+                }
+                if(r.crop && r.crop.trim() !== "") {
+                    uniqueKhasraAggregate[kKey].cropsSet.add(r.crop.trim());
+                }
+            });
+
+            masterCropCuttingList = Object.values(uniqueKhasraAggregate);
+            sortKhasraArraySpecial(masterCropCuttingList, 'khasraNo');
+
+            // Set total khasras in calculation field
+            document.getElementById('calcTotalKhasras').value = masterCropCuttingList.length;
+
+            setupDropdowns(); 
+            document.getElementById('dashboardArea').style.display = 'block'; 
+            switchTab('normalView');
+        }
+
+        // --- NEW: Plot Selection Logic Based on Remainder ---
+        function calculateSelectedPlot() {
+            let inputNumStr = document.getElementById('manualRandNumber').value.trim();
+            let totalKhasras = masterCropCuttingList.length;
+            let outputBadge = document.getElementById('calcOutputBadge');
+            let infoFormulaText = document.getElementById('calcFormulaText');
+
+            if(inputNumStr === "" || totalKhasras === 0) {
+                currentCalculatedPlotSequence = -1;
+                outputBadge.style.background = "#4a5568";
+                outputBadge.innerText = "कृपया संख्या दर्ज करें...";
+                infoFormulaText.innerHTML = `फॉर्मूला: [दर्ज संख्या] ÷ [कुल खसरे] = जो भी शेषफल बचेगा, उस सीक्वेंस नंबर का खसरा क्रॉप कटिंग प्लॉट माना जाएगा।`;
+                if(activeTab === 'cropCuttingView') renderCropCuttingReport();
+                return;
+            }
+
+            let inputNum = parseInt(inputNumStr, 10);
+            if(isNaN(inputNum) || inputNum <= 0) {
+                outputBadge.style.background = "#e53e3e";
+                outputBadge.innerText = "अमान्य संख्या!";
+                return;
+            }
+
+            // Calculation formula:
+            let remainder = inputNum % totalKhasras;
+            if(remainder === 0) {
+                remainder = totalKhasras; // यदि शेषफल 0 बचता है, तो अंतिम सीक्वेंस संख्या (N) ली जाएगी।
+            }
+
+            currentCalculatedPlotSequence = remainder;
+            let targetedKhasraRecord = masterCropCuttingList[remainder - 1];
+
+            outputBadge.style.background = "#38a169"; // Green success
+            outputBadge.innerHTML = `🎯 शेषफल: ${remainder} ➔ चयनित खसरा: ${targetedKhasraRecord.khasraNo}`;
+            infoFormulaText.innerHTML = `गणना विवरण: <strong>${inputNum}</strong> को <strong>${totalKhasras}</strong> से विभाजित करने पर शेषफल <strong>${remainder}</strong> बचता है। अतः सीक्वेंस क्रमांक <strong>${remainder}</strong> पर स्थित खसरा संख्या <strong>${targetedKhasraRecord.khasraNo}</strong> आपका अलॉटेड प्लॉट है।`;
+
+            // Auto refresh view if inside crop cutting view
+            if(activeTab === 'cropCuttingView') {
+                renderCropCuttingReport();
+            }
+        }
+
+        function switchTab(t) {
+            activeTab = t;
+            document.querySelectorAll('.tab-content, .tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab-' + t).classList.add('active'); 
+            document.getElementById(t).classList.add('active');
+            
+            if(t === 'normalView') filterMergedData();
+            else if(t === 'consolidatedView') filterConsolidatedDropdown();
+            else if(t === 'girdawariView') renderGirdawariReport();
+            else if(t === 'cropCuttingView') renderCropCuttingReport();
+        }
+
+        function parseShare(s) {
+            if (!s || String(s).toLowerCase() === 'nan') return 1.0;
+            s = String(s).trim();
+            if (s.includes('/')) { let p = s.split('/'); let n = parseFloat(p[0]), d = parseFloat(p[1]); if (d !== 0) return n / d; }
+            let v = parseFloat(s); return isNaN(v) ? 1.0 : v;
+        }
+
+        function setupDropdowns() {
+            const ks = document.getElementById('searchKhata'); ks.innerHTML = '<option value="">-- सभी खाते --</option>';
+            const gks = document.getElementById('girdawariKhataSelect'); gks.innerHTML = '<option value="">-- खाता चुनें --</option>';
+            
+            let orderedKhatas = [...new Set(mergedDatabase.map(r => r.khataNo))].sort((a,b)=>parseFloat(a)-parseFloat(b));
+            
+            orderedKhatas.forEach(k => {
+                let opt = document.createElement('option'); opt.value = k; opt.innerText = "खाता संख्या " + k; ks.appendChild(opt);
+                let opt2 = document.createElement('option'); opt2.value = k; opt2.innerText = "खाता संख्या " + k; gks.appendChild(opt2);
+            });
+            if(gks.options.length > 1) gks.selectedIndex = 1;
+
+            uniqueFarmersMap = {};
+            mergedDatabase.forEach(r => {
+                let pStr = r.father ? "पुत्र " + r.father : (r.husband ? "पत्नी " + r.husband : "");
+                let k = r.name + "|||" + pStr;
+                if(!uniqueFarmersMap[k]) uniqueFarmersMap[k] = [];
+                if(!uniqueFarmersMap[k].some(x => x.khataNo === r.khataNo && x.khasraNo === r.khasraNo)) uniqueFarmersMap[k].push(r);
+            });
+            filterConsolidatedDropdown();
+        }
+
+        function filterConsolidatedDropdown() {
+            const txt = document.getElementById('manualConsolidatedSearch').value.toLowerCase().trim();
+            const cs = document.getElementById('consolidatedSelect'); cs.innerHTML = '<option value="">-- नाम सेलेक्ट करें --</option>';
+            Object.keys(uniqueFarmersMap).sort().forEach(k => {
+                let p = k.split("|||"); let d = p[0] + " (" + p[1] + ") - " + uniqueFarmersMap[k].length + " जगह भूमि";
+                if(txt === '' || d.toLowerCase().includes(txt)) { let opt = document.createElement('option'); opt.value = k; opt.innerText = d; cs.appendChild(opt); }
+            });
+            if(txt !== '' && cs.options.length === 2) { cs.selectedIndex = 1; renderConsolidatedReport(); }
+        }
+
+        function filterMergedData() {
+            const khata = document.getElementById('searchKhata').value, name = document.getElementById('searchName').value.trim().toLowerCase();
+            const khasra = document.getElementById('searchKhasra').value.trim();
+            let f = mergedDatabase;
+            if(khata) f = f.filter(r => r.khataNo === khata); if(name) f = f.filter(r => r.name.toLowerCase().includes(name));
+            if(khasra) f = f.filter(r => r.khasraNo.includes(khasra));
+            renderNormalJamabandi(f);
+        }
+
+        function resetNormalFilters() { document.querySelectorAll('.search-box input, .search-box select').forEach(i => i.value = ""); renderNormalJamabandi(mergedDatabase); }
+
+        function getGovtFooterHTML() {
+            return `<div class="print-footer">
+                <div class="print-footer-legal">यह प्रपत्र केवल प्रार्थी की जानकारी के लिए है।<br>इसका उपयोग किसी भी न्यायालय मे साक्षी के रूप मे नहीं किया जा सकता है।</div>
+                <div class="print-footer-flex">
+                    <div class="creator">Sunil Mahala Mobile No. 8955561557</div>
+                    <div style="text-align: center;">दिनांक: ${new Date().toLocaleDateString('en-GB')}<br><br><br>सक्षम अधिकारी के हस्ताक्षर</div>
+                </div>
+            </div>`;
+        }
+
+        // --- RENDER 1: Jamabandi Normal Layout ---
+        function renderNormalJamabandi(rows) {
+            const printArea = document.getElementById('printArea');
+            if(!rows || rows.length === 0) { printArea.innerHTML = "<p style='text-align:center; color:red; font-weight:bold;'>कोई मिलान रिकॉर्ड नहीं मिला!</p>"; return; }
+            const groups = {}; rows.forEach(r => { if(!groups[r.khataNo]) groups[r.khataNo] = []; groups[r.khataNo].push(r); });
+            let html = "";
+
+            for (const khata_no in groups) {
+                const list = groups[khata_no];
+                let khasraMap = {}; let profiles = {}; let landClassSum = {};
+                list.forEach(r => {
+                    if (!khasraMap[r.khasraNo]) {
+                        khasraMap[r.khasraNo] = { area: r.khasraArea, lc: r.landClass, cropsSet: new Set() };
+                    }
+                    if(r.crop) khasraMap[r.khasraNo].cropsSet.add(r.crop);
+                    
+                    let relation = r.father ? "पुत्र " + r.father : (r.husband ? "पत्नी " + r.husband : "");
+                    profiles[r.name + "|||" + relation + "|||" + r.caste + "|||" + r.resident + "|||" + r.share] = r;
+                });
+
+                let totalArea = 0; 
+                for (let kh in khasraMap) {
+                    let a = khasraMap[kh].area; let l = khasraMap[kh].lc; totalArea += a;
+                    if(!landClassSum[l]) landClassSum[l] = { area: 0, khasras: [] };
+                    landClassSum[l].area += a; landClassSum[l].khasras.push(kh);
+                }
+
+                let secHtml = `<div class="khata-section">
+                    <div class="pdf-header"><h2>जमाबन्दी (प्रतिलिपि)</h2><div class="pdf-p-form">प्रपत्र पी-26 (सी)<br>(देखिये नियम 153 ए)</div></div>
+                    <table class="pdf-meta-table">
+                        <tr><td>ग्राम का नाम :- ${geoMeta.village}</td><td>अंतिम चौसला आधार संवत :- --</td></tr>
+                        <tr><td>पटवार हल्का :- ${geoMeta.patwar}<br>भू.अभि.नि. :- ${geoMeta.region}</td><td>भूमि धारक का नाम :- राजस्थान सरकार<br>क्षेत्रफल की ईकाई :- हैक्टेयर</td></tr>
+                        <tr><td>तहसील :- ${geoMeta.tehsil}</td><td>खाता संख्या नया :- <strong>${khata_no}</strong></td></tr>
+                        <tr><td>जिला :- ${geoMeta.district}</td><td>खाता संख्या पुराना :- --</td></tr>
+                    </table>
+                    <details class="lc-details" open><summary>📂 <strong>भूमि वर्गीकरण अनुसार कुल खसरे एवं रकबा</strong></summary><ul>`;
+                for(let lc in landClassSum) {
+                    secHtml += `<li><strong>${lc}</strong> - कुल खसरे: [${landClassSum[lc].khasras.join(", ")}], कुल क्षेत्रफल: <strong>${landClassSum[lc].area.toFixed(4)} हे.</strong></li>`;
+                }
+                secHtml += `</ul></details><div class="pdf-khatedar-list"><strong>काश्तकार का नाम:-</strong><br>`;
+                let fIdx = 1;
+                for (let pKey in profiles) {
+                    const parts = pKey.split("|||");
+                    let personalLand = parseShare(parts[4]) * totalArea;
+                    secHtml += `${fIdx}. ${parts[0]} ${parts[1]} हिस्सा- ${parts[4]} <span class="share-area">(रकबा: ${personalLand.toFixed(4)} हे.)</span> जाति- ${parts[2]} सा. ${parts[3]} खातेदार<br>`; fIdx++;
+                }
+                secHtml += `</div><table class="pdf-khasra-table">
+                        <tr><th style="width:15%;">खसरा संख्या</th><th style="width:25%;">क्षेत्रफल भूमि वर्गीकरण</th><th style="width:15%;">कृषक द्वारा संदत्त लगान</th><th style="width:15%;">सिंचाई के साधन</th><th style="width:30%;">टिप्पणी व नामान्तरकरण विवरण</th></tr>`;
+                
+                let keysSorted = Object.keys(khasraMap).map(k => ({kNo: k}));
+                sortKhasraArraySpecial(keysSorted, 'kNo');
+
+                keysSorted.forEach(item => {
+                    let kh = item.kNo;
+                    secHtml += `<tr><td><strong>${kh}</strong></td><td>${khasraMap[kh].area.toFixed(4)} <br> ${khasraMap[kh].lc}</td><td></td><td></td><td></td></tr>`;
+                });
+                secHtml += `<tr style="background:#f0f0f0; font-weight:bold;"><td>कुल खसरे - ${Object.keys(khasraMap).length}</td><td>${totalArea.toFixed(4)}</td><td></td><td></td><td></td></tr></table>` + getGovtFooterHTML() + `</div>`;
+                html += secHtml;
+            }
+            printArea.innerHTML = html;
+        }
+
+        // --- RENDER 2: Consolidated Records ---
+        function renderConsolidatedReport() {
+            const printArea = document.getElementById('printArea');
+            const sel = document.getElementById('consolidatedSelect').value;
+            if(!sel) { printArea.innerHTML = "<p style='text-align:center;'>कृपया नाम चुनें...</p>"; return; }
+            const rows = uniqueFarmersMap[sel]; const p = sel.split("|||");
+            
+            // Build unique khasras map to ensure exact listings
+            let uniqueKhasraObj = {};
+            rows.forEach(r => {
+                if(!uniqueKhasraObj[r.khasraNo]) {
+                    uniqueKhasraObj[r.khasraNo] = { ...r, cropsSet: new Set() };
+                }
+                if(r.crop) uniqueKhasraObj[r.khasraNo].cropsSet.add(r.crop);
+            });
+
+            let sortedRows = Object.values(uniqueKhasraObj);
+            sortKhasraArraySpecial(sortedRows, 'khasraNo');
+
+            let html = `<div class="khata-section">
+                    <div class="pdf-header"><h2>समेकित रिकॉर्ड (प्रतिलिपि)</h2></div>
+                    <div class="pdf-khatedar-list"><strong>खातेदार का नाम:</strong> ${p[0]} ${p[1]}<br><strong>संबद्ध खातों की संख्या:</strong> ${[...new Set(sortedRows.map(r=>r.khataNo))].length}</div>
+                    <table class="pdf-khasra-table">
+                        <tr><th>क्र.सं.</th><th>खाता संख्या</th><th>खसरा संख्या</th><th>भूमि वर्गीकरण</th><th>हिस्सा</th><th>खातेदार का रकबा (हे.)</th></tr>`;
+            let gTotal = 0;
+            sortedRows.forEach((r, i) => {
+                let land = parseShare(r.share) * r.khasraArea; gTotal += land;
+                html += `<tr><td>${i+1}</td><td>${r.khataNo}</td><td><strong>${r.khasraNo}</strong></td><td>${r.landClass}</td><td>${r.share}</td><td><strong>${land.toFixed(4)}</strong></td></tr>`;
+            });
+            html += `<tr style="background:#f0f0f0; font-weight:bold;"><td colspan="5" style="text-align:right;">कुल आवंटित रकबा:</td><td>${gTotal.toFixed(4)} हे.</td></tr></table>` + getGovtFooterHTML() + `</div>`;
+            printArea.innerHTML = html;
+        }
+
+        // --- RENDER 3: Form-13 Khasra Girdawari Print Layout (As requested: Multi crops combined in 1 column, "बोया गया खराबा" row completely removed) ---
+        function renderGirdawariReport() {
+            const printArea = document.getElementById('printArea');
+            const khata = document.getElementById('girdawariKhataSelect').value;
+            if(!khata) { printArea.innerHTML = "<p style='text-align:center; padding:20px;'>कृपया गिरदावरी प्रपत्र उत्पन्न करने के लिए ऊपर ड्रॉपडाउन से एक खाता संख्या चुनें।</p>"; return; }
+            
+            let khataRows = mergedDatabase.filter(r => r.khataNo === khata);
+            if(khataRows.length === 0) return;
+
+            let khasraMap = {}; let farmers = {};
+            khataRows.forEach(r => {
+                if(!khasraMap[r.khasraNo]) {
+                    khasraMap[r.khasraNo] = { area: r.khasraArea, lc: r.landClass, cropsSet: new Set(), irr: r.irrigated, unirr: r.unirrigated };
+                }
+                if(r.crop && r.crop.trim() !== "") khasraMap[r.khasraNo].cropsSet.add(r.crop.trim());
+                
+                let rel = r.father ? "पुत्र " + r.father : (r.husband ? "पत्नी " + r.husband : "");
+                farmers[r.name + "|||" + rel + "|||" + r.caste + "|||" + r.share] = true;
+            });
+
+            let uniqueKhasraList = [];
+            for (let k in khasraMap) { uniqueKhasraList.push({ khasraNo: k, ...khasraMap[k] }); }
+            uniqueKhasraList = sortKhasraArraySpecial(uniqueKhasraList, 'khasraNo');
+
+            let farmerText = ""; let idx = 1;
+            for(let f in farmers) {
+                let p = f.split("|||");
+                farmerText += `${idx}. ${p[0]} ${p[1]} जाति ${p[2]} हिस्सा ${p[3]} &nbsp;&nbsp;&nbsp;`; idx++;
+            }
+
+            let totalVillageArea = 0; let totalIrrigated = 0; let totalUnirrigated = 0;
+            let tableRowsHtml = "";
+            uniqueKhasraList.forEach(k => {
+                totalVillageArea += k.area;
+                let finalIrr = k.irr > 0 ? k.irr : (k.lc.includes("चाही") ? k.area : 0);
+                let finalUnirr = k.unirr > 0 ? k.unirr : (!k.lc.includes("चाही") ? k.area : 0);
+                totalIrrigated += finalIrr; totalUnirrigated += finalUnirr;
+
+                let mergedCropsString = Array.from(k.cropsSet).join(", ");
+                if(mergedCropsString === "") mergedCropsString = "-";
+
+                // Clean columns: One single row per khasra with no "बोया गया खराबा" breakdown rows
+                tableRowsHtml += `<tr>
+                    <td><strong>${k.khasraNo}</strong></td>
+                    <td>${k.area.toFixed(4)}</td>
+                    <td>${k.lc}</td>
+                    <td>${finalIrr > 0 ? 'कुंआ (बिजली पंपसेट)' : 'वर्षा आधारित'}</td>
+                    <td><strong>${mergedCropsString}</strong></td>
+                    <td>${finalIrr.toFixed(4)}</td>
+                    <td>${finalUnirr.toFixed(4)}</td>
+                    <td>0.0000</td>
+                    <td></td>
+                </tr>`;
+            });
+
+            let html = `<div class="khata-section">
+                <div class="pdf-header">
+                    <h2 style="text-decoration:none;">राजस्व मण्डल राजस्थान, अजमेर</h2>
+                    <div class="girdawari-title-sub">प्रपत्र संख्या प-13 (नियम 64)</div>
+                    <div class="girdawari-title-sub" style="color:#2c5282;"><strong>खसरा गिरदावरी, वर्ष 2026 (सम्वत 2082)</strong></div>
+                    <div class="pdf-p-form">मूल प्रतिलिपि</div>
+                </div>
+                
+                <div class="girdawari-top-meta">
+                    ग्रामः ${geoMeta.village} &nbsp;|&nbsp; पटवार-हल्काः ${geoMeta.patwar} &nbsp;|&nbsp; भू. अभि. नि. क्षेत्रः ${geoMeta.region} &nbsp;|&nbsp; तहसीलः ${geoMeta.tehsil} &nbsp;|&nbsp; जिलाः ${geoMeta.district} <br>
+                    <strong>खाता संख्या (जमाबन्दी के अनुसार): ${khata}</strong> &nbsp;|&nbsp; भूमिधारक: राजस्थान सरकार
+                </div>
+
+                <div class="pdf-khatedar-list" style="border:1px solid #000; background:#fff;">
+                    <strong>काश्तकार का विवरण (जमाबन्दी के अनुसार) :</strong><br>${farmerText}
+                </div>
+
+                <table class="pdf-khasra-table">
+                    <thead>
+                        <tr>
+                            <th rowspan="2">खसरा नं.</th>
+                            <th rowspan="2">क्षेत्रफल (हैक्टेयर)</th>
+                            <th rowspan="2">भूमि की किस्म</th>
+                            <th rowspan="2">सिंचाई स्त्रोत तरीके सहित</th>
+                            <th rowspan="2">फसल का नाम</th>
+                            <th colspan="3">क्षेत्रफल सहित ब्यौरा</th>
+                            <th rowspan="2">टिप्पणियां तथा अधिकार परिवर्तन</th>
+                        </tr>
+                        <tr>
+                            <th>सिंचित (हे.)</th>
+                            <th>असिंचित (हे.)</th>
+                            <th>न जोते गए (हे.)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${tableRowsHtml}
+                        <tr style="background:#f0f0f0; font-weight:bold;">
+                            <td>योग-किता-${uniqueKhasraList.length}</td>
+                            <td>${totalVillageArea.toFixed(4)}</td>
+                            <td colspan="3"></td>
+                            <td>${totalIrrigated.toFixed(4)}</td>
+                            <td>${totalUnirrigated.toFixed(4)}</td>
+                            <td>0.0000</td>
+                            <td></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="sys-note">यह प्रपत्र प-13 की डिजिटल आंशिक नकल है। सिस्टम जनरेटेड होने के कारण हस्ताक्षर की आवश्यकता नहीं है।</div>
+                ${getGovtFooterHTML()}
+            </div>`;
+            
+            printArea.innerHTML = html;
+        }
+
+        // --- RENDER 4: Crop Cutting System with special serial order tables (With multi crops merged via "," and auto highlight of selected plot) ---
+        function renderCropCuttingReport() {
+            const printArea = document.getElementById('printArea');
+            if(masterCropCuttingList.length === 0) { printArea.innerHTML = "<p style='text-align:center;'>डेटा अनुपलब्ध है!</p>"; return; }
+
+            // TABLE 1: Master Crop Cutting List
+            let table1Html = `<div class="section-heading">📊 टेबल 1: क्रॉप कटिंग खसरा मास्टर अनुक्रमणिका (बट्टा क्रमानुसार व्यवस्थित)</div>
+                <table class="cc-table">
+                    <thead>
+                        <tr>
+                            <th>क्र.सं.</th>
+                            <th>खसरा संख्या</th>
+                            <th>स्थिति प्रकार</th>
+                            <th>खाता संख्या</th>
+                            <th>रकबा (हे.)</th>
+                            <th>समस्त फसलें (कोमा युक्त)</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+            
+            masterCropCuttingList.forEach((c, idx) => {
+                let seqNum = idx + 1;
+                let isBhatta = c.khasraNo.includes('/');
+                let badge = isBhatta ? `<span class="badge-bhatta">बट्टा खसरा</span>` : `<span style="color:#718096;">साधारण</span>`;
+                
+                let isSelectedRow = (seqNum === currentCalculatedPlotSequence) ? 'class="selected-plot-row"' : '';
+                let selectionTextBadge = (seqNum === currentCalculatedPlotSequence) ? '<br><span class="selected-plot-badge">🎯 चयनित प्लॉट</span>' : '';
+
+                let finalCombinedCrops = Array.from(c.cropsSet).join(", ");
+                if(finalCombinedCrops === "") finalCombinedCrops = "सरसों";
+
+                table1Html += `<tr ${isSelectedRow}>
+                    <td>${seqNum}</td>
+                    <td><strong style="font-size:15px; color:#2b6cb0;">${c.khasraNo}</strong> ${selectionTextBadge}</td>
+                    <td>${badge}</td>
+                    <td>खाता ${c.khataNo}</td>
+                    <td>${c.area.toFixed(4)}</td>
+                    <td><span style="color:#2f855a; font-weight:bold;">${finalCombinedCrops}</span></td>
+                </tr>`;
+            });
+            table1Html += `</tbody></table>`;
+
+            // TABLE 2: Sequential Index Table Mapping 1 to N consecutively
+            let table2Html = `<div class="section-heading" style="page-break-before: always;">📋 टेबल 2: खसरा संख्या सीरियल इंडेक्स मैपिंग टेबल (1 से लगातार क्रमांक)</div>
+                <table class="cc-table" style="background:#fff;">
+                    <thead>
+                        <tr>
+                            <th style="width: 20%;">सीरियल नंबर (1 से लगातार)</th>
+                            <th style="width: 40%;">संबद्ध खसरा संख्या (बट्टा क्रमानुसार)</th>
+                            <th style="width: 40%;">विवरण / सॉफ्टवेयर टिप्पणी</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+            
+            masterCropCuttingList.forEach((c, idx) => {
+                let serialNo = idx + 1;
+                let isSelectedRow = (serialNo === currentCalculatedPlotSequence) ? 'class="selected-plot-row"' : '';
+                let rowComment = (serialNo === currentCalculatedPlotSequence) 
+                    ? `🔥 यह खसरा आपका क्रॉप कटिंग प्लॉट चुना गया है।` 
+                    : `सीरियल नंबर ${serialNo} पर खसरा ${c.khasraNo} आवंटित है`;
+
+                table2Html += `<tr ${isSelectedRow}>
+                    <td><strong style="font-size:16px; color:#c05621;">${serialNo}</strong></td>
+                    <td><strong style="font-size:16px; color:#2d3748;">${c.khasraNo}</strong></td>
+                    <td style="font-size:12px;">${rowComment}</td>
+                </tr>`;
+            });
+            table2Html += `</tbody></table>`;
+
+            let mainContainerHtml = `<div class="khata-section">
+                <div class="pdf-header">
+                    <h2>क्रॉप कटिंग अनुक्रमणिका एवं खसरा इंडेक्स सॉफ्टवेयर शीट</h2>
+                    <div class="girdawari-title-sub">ग्राम: ${geoMeta.village} | पटवार: ${geoMeta.patwar} | कुल खसरे: ${masterCropCuttingList.length}</div>
+                </div>`;
+                
+            if(currentCalculatedPlotSequence > 0) {
+                let selKhNo = masterCropCuttingList[currentCalculatedPlotSequence - 1].khasraNo;
+                mainContainerHtml += `<div style="background-color:#fff5f5; border:1px solid #e53e3e; padding:10px; margin-bottom:15px; font-weight:bold; color:#c53030; text-align:center; font-size:15px;">
+                    🎯 इस शीट में रैंडम नंबर गणना के आधार पर सीक्वेंस क्रमांक ${currentCalculatedPlotSequence} का खसरा संख्या "${selKhNo}" क्रॉप कटिंग प्लॉट हेतु चयनित है।
+                </div>`;
+            }
+
+            mainContainerHtml += `<div class="flex-cc-tables">
+                    ${table1Html}
+                    ${table2Html}
+                </div>
+                ${getGovtFooterHTML()}
+            </div>`;
+            
+            printArea.innerHTML = mainContainerHtml;
+            
+            // Preview binding inside UI dashboard panel
+            let innerCCView = document.getElementById('cropCuttingView');
+            let oldTable = innerCCView.querySelector('.khata-section');
+            if(oldTable) oldTable.remove();
+            
+            let previewClone = document.createElement('div');
+            previewClone.innerHTML = mainContainerHtml;
+            innerCCView.appendChild(previewClone);
+        }
+    </script>
+</body>
+</html>
